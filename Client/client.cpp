@@ -10,15 +10,23 @@ int main() {
 
 	SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
+	std::string server_ip;
+	int server_port;
+
+	std::cout << "연결할 서버의 ip를 입력해주세요: ";
+	std::cin >> server_ip;
+	std::cout << "연결할 포트 번호를 입력해주세요: ";
+	std::cin >> server_port;
+
 	// 서버의 소켓 주소 설정
 	sockaddr_in socket_address;
 	socket_address.sin_family = AF_INET;
-	socket_address.sin_addr.s_addr = inet_addr("192.168.0.174");
+	socket_address.sin_addr.s_addr = inet_addr(server_ip.c_str());
 	socket_address.sin_port = htons(10000);
 	int return_value = connect(client_socket, (sockaddr*)&socket_address, sizeof(socket_address));
 	if (return_value == SOCKET_ERROR) {
 		int error_num = WSAGetLastError();
-		printf("%d ", error_num);
+		std::cout << error_num;
 		closesocket(client_socket);
 		WSACleanup();
 		return error_num;
