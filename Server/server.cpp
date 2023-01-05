@@ -53,7 +53,7 @@ int main() {
 			closesocket(listen_socket);
 			WSACleanup();
 		}
-		printf("%s\n", msg_to_recv);
+		printf("받은 데이터: %s\n", msg_to_recv);
 
 		int sended_bytes = send(client_socket, msg_to_recv, strlen(msg_to_recv), 0);
 		// 논 블로킹 소켓이므로 아직 보내지 못했을 때도 SOCKET_ERROR 반환
@@ -73,8 +73,6 @@ int main() {
 
 	}
 
-
 	closesocket(listen_socket);
-
 	WSACleanup();
 }
