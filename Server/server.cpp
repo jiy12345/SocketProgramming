@@ -21,7 +21,7 @@ int main() {
 	if (return_value == SOCKET_ERROR)
 	{
 		int error_num = WSAGetLastError();
-		printf("%d ", error_num);
+		std::cout << "에러 발생! 에러 코드: " << error_num;
 		closesocket(listen_socket);
 		WSACleanup();
 		return error_num;
@@ -30,7 +30,7 @@ int main() {
 	if (return_value == SOCKET_ERROR)
 	{
 		int error_num = WSAGetLastError();
-		printf("%d ", error_num);
+		std::cout << "에러 발생! 에러 코드: " << error_num;
 		closesocket(listen_socket);
 		WSACleanup();
 		return error_num;
@@ -48,7 +48,7 @@ int main() {
 		int recved_bytes = recv(client_socket, msg_to_recv, 256, 0);
 		if (recved_bytes == SOCKET_ERROR) {
 			int error_num = WSAGetLastError();
-			printf("%d ", error_num);
+			std::cout << "에러 발생! 에러 코드: " << error_num;
 			closesocket(client_socket);
 			closesocket(listen_socket);
 			WSACleanup();
@@ -63,7 +63,7 @@ int main() {
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
 				int error_num = WSAGetLastError();
-				printf("%d ", error_num);
+				std::cout << "에러 발생! 에러 코드: " << error_num;
 				closesocket(client_socket);
 				closesocket(listen_socket);
 				WSACleanup();

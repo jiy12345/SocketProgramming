@@ -2,6 +2,30 @@
 #include<iostream>
 #include<winsock2.h>
 
+// WINAPI 스레드를 위한 함수
+// 스레드로의 진입점 함수가 되기 위해 반드시 WINAPI로 선언되어야
+DWORD WINAPI SendThread(LPVOID socket)
+{
+	SOCKET client_socket = (SOCKET)socket;
+	while (true)
+	{
+		char msg_to_send[256] = { 0, };
+		fgets(msg_to_send, 256, stdin);
+		int sended_bytes = send(client_socket, msg_to_send, strlen(msg_to_send), 0);
+		if (sended_bytes == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				int error_num = WSAGetLastError();
+				std::cout << "에러 발생! 에러 코드: " << error_num;
+				closesocket(client_socket);
+				WSACleanup();
+				return error_num;
+			}
+		}
+	}
+};
+
 int main() {
 	WSAData wsa_data;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
@@ -26,7 +50,7 @@ int main() {
 	int return_value = connect(client_socket, (sockaddr*)&socket_address, sizeof(socket_address));
 	if (return_value == SOCKET_ERROR) {
 		int error_num = WSAGetLastError();
-		std::cout << error_num;
+		std::cout << "에러 발생! 에러 코드: " << error_num;
 		closesocket(client_socket);
 		WSACleanup();
 		return error_num;
@@ -36,27 +60,11 @@ int main() {
 	u_long mode = TRUE;
 	ioctlsocket(client_socket, FIONBIO, &mode);
 
+	// WINAPI 스레드 생성
+	DWORD dwThreadID;
+	HANDLE hClient = CreateThread(0, 0, SendThread, (LPVOID)client_socket, 0, &dwThreadID);
+
 	while (true) {
-		// 서버로 데이터 보내기
-		char msg_to_send[256] = { 0, };
-		printf("보낼 데이터: ");
-		fgets(msg_to_send, 256, stdin);
-		int sended_bytes = send(client_socket, msg_to_send, strlen(msg_to_send), 0);
-		// 논 블로킹 소켓이므로 아직 보내지 못했을 때도 SOCKET_ERROR 반환
-		if (sended_bytes == SOCKET_ERROR) {
-			// 아직 보내지 못했을 때는 항상 에러가 WSAEWOULDBLOCK 값이어야 한다!
-			// 그렇지 않으면 에러
-			if (WSAGetLastError() != WSAEWOULDBLOCK)
-			{
-				int error_num = WSAGetLastError();
-				printf("%d ", error_num);
-				closesocket(client_socket);
-				WSACleanup();
-				return error_num;
-
-			}
-		}
-
 		char msg_to_recv[256] = { 0, };
 		int recved_bytes = recv(client_socket, msg_to_recv, 256, 0);
 		if (recved_bytes == SOCKET_ERROR) {
@@ -65,7 +73,7 @@ int main() {
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
 				int error_num = WSAGetLastError();
-				printf("%d ", error_num);
+				std::cout << "에러 발생! 에러 코드: " << error_num;
 				closesocket(client_socket);
 				WSACleanup();
 				return error_num;
