@@ -17,7 +17,7 @@ DWORD WINAPI SendThread(LPVOID socket)
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
 				int error_num = WSAGetLastError();
-				std::cout << "에러 발생! 에러 코드: " << error_num;
+				std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
 				closesocket(client_socket);
 				WSACleanup();
 				return error_num;
@@ -34,13 +34,13 @@ int main() {
 
 	SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-	std::string server_ip;
-	int server_port;
+	std::string server_ip = "192.168.0.174";
+	int server_port = 10000;
 
-	std::cout << "연결할 서버의 ip를 입력해주세요: ";
-	std::cin >> server_ip;
-	std::cout << "연결할 포트 번호를 입력해주세요: ";
-	std::cin >> server_port;
+	//std::cout << "연결할 서버의 ip를 입력해주세요: ";
+	//std::cin >> server_ip;
+	//std::cout << "연결할 포트 번호를 입력해주세요: ";
+	//std::cin >> server_port;
 
 	// 서버의 소켓 주소 설정
 	sockaddr_in socket_address;
@@ -50,7 +50,7 @@ int main() {
 	int return_value = connect(client_socket, (sockaddr*)&socket_address, sizeof(socket_address));
 	if (return_value == SOCKET_ERROR) {
 		int error_num = WSAGetLastError();
-		std::cout << "에러 발생! 에러 코드: " << error_num;
+		std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
 		closesocket(client_socket);
 		WSACleanup();
 		return error_num;
@@ -73,7 +73,7 @@ int main() {
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
 				int error_num = WSAGetLastError();
-				std::cout << "에러 발생! 에러 코드: " << error_num;
+				std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
 				closesocket(client_socket);
 				WSACleanup();
 				return error_num;
@@ -85,7 +85,7 @@ int main() {
 			return 0;
 		}
 		else {
-			printf("받은 데이터: %s", msg_to_recv);
+			printf("받은 데이터: %s\n", msg_to_recv);
 		}
 	}
 

@@ -2,6 +2,53 @@
 #include<iostream>
 #include<winsock2.h>
 
+DWORD WINAPI ServerThread(LPVOID lpThreadParameter)
+{
+	SOCKET client_socket = (SOCKET)lpThreadParameter;
+	while (true)
+	{
+		char msg_to_recv[256] = { 0, };
+		int recved_bytes = recv(client_socket, msg_to_recv, 256, 0);
+		if (recved_bytes == 0)
+		{
+			std::cout << "클라이언트 정상 종료" << '\n';
+			closesocket(client_socket);
+			break;
+		}
+		if (recved_bytes == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				int error_num = WSAGetLastError();
+				std::cout << "클라이언트 비정상 종료! 에러 코드: " << error_num << '\n';
+				closesocket(client_socket);
+				return error_num;
+			}
+		}
+		else
+		{
+			printf("%s\n", msg_to_recv);
+		}
+
+		if (recved_bytes > 0)
+		{
+			int iSendBytes = send(client_socket, msg_to_recv, strlen(msg_to_recv), 0);
+			if (iSendBytes == SOCKET_ERROR)
+			{
+				if (WSAGetLastError() != WSAEWOULDBLOCK)
+				{
+					int error_num = WSAGetLastError();
+					std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
+					closesocket(client_socket);
+					return error_num;
+				}
+			}
+		}
+	}
+
+	return 0;
+};
+
 int main() {
 	WSAData wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
@@ -21,7 +68,7 @@ int main() {
 	if (return_value == SOCKET_ERROR)
 	{
 		int error_num = WSAGetLastError();
-		std::cout << "에러 발생! 에러 코드: " << error_num;
+		std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
 		closesocket(listen_socket);
 		WSACleanup();
 		return error_num;
@@ -30,47 +77,33 @@ int main() {
 	if (return_value == SOCKET_ERROR)
 	{
 		int error_num = WSAGetLastError();
-		std::cout << "에러 발생! 에러 코드: " << error_num;
+		std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
 		closesocket(listen_socket);
 		WSACleanup();
 		return error_num;
 	}
 
-	// 접속을 시도하는 클라이언트 받아들이기
-	SOCKADDR_IN clientaddr;
-	int length = sizeof(clientaddr);
-	SOCKET client_socket = accept(listen_socket, (sockaddr*)&clientaddr, &length);
-	printf("클라이언트 접속 : IP:%s, PORT:%d\n",
-		inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
-
 	while (true) {
-		char msg_to_recv[256] = { 0, };
-		int recved_bytes = recv(client_socket, msg_to_recv, 256, 0);
-		if (recved_bytes == SOCKET_ERROR) {
+		SOCKADDR_IN client_addr;
+		int addr_length = sizeof(client_addr);
+		// 접속을 시도하는 클라이언트 받아들이기
+		SOCKET client_socket = accept(listen_socket, (sockaddr*)&client_addr, &addr_length);
+		if (client_socket == SOCKET_ERROR)
+		{
 			int error_num = WSAGetLastError();
-			std::cout << "에러 발생! 에러 코드: " << error_num;
-			closesocket(client_socket);
+			std::cout << "에러 발생! 에러 코드: " << error_num << '\n';
 			closesocket(listen_socket);
 			WSACleanup();
-		}
-		printf("받은 데이터: %s\n", msg_to_recv);
-
-		int sended_bytes = send(client_socket, msg_to_recv, strlen(msg_to_recv), 0);
-		// 논 블로킹 소켓이므로 아직 보내지 못했을 때도 SOCKET_ERROR 반환
-		if (sended_bytes == SOCKET_ERROR) {
-			// 아직 보내지 못했을 때는 항상 에러가 WSAEWOULDBLOCK 값이어야 한다!
-			// 그렇지 않으면 에러
-			if (WSAGetLastError() != WSAEWOULDBLOCK)
-			{
-				int error_num = WSAGetLastError();
-				std::cout << "에러 발생! 에러 코드: " << error_num;
-				closesocket(client_socket);
-				closesocket(listen_socket);
-				WSACleanup();
-				return error_num;
-			}
+			return error_num;
 		}
 
+		printf("클라이언트 접속 : IP:%s, PORT:%d\n",
+			inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+		// 연결된 클라이언트마다 스레드 만들기
+		DWORD thread_id;
+		HANDLE hClient = CreateThread(0, 0, ServerThread,
+			(LPVOID)client_socket, 0, &thread_id);     
 	}
 
 	closesocket(listen_socket);
