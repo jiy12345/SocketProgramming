@@ -6,9 +6,14 @@
 
 void MakePacket(PACKET& packet, SOCKET client_socket, char* msg, short packet_type) {
 	ZeroMemory(&packet, sizeof(PACKET));
-	packet.ph.len = strlen(msg) + PACKET_HEADER_SIZE;
+	if(msg == NULL) {
+		packet.ph.len = PACKET_HEADER_SIZE;
+	}
+	else {
+		packet.ph.len = strlen(msg) + PACKET_HEADER_SIZE;
+		memcpy(packet.msg, msg, strlen(msg));
+	}
 	packet.ph.type = packet_type;
-	memcpy(packet.msg, msg, strlen(msg));
 }
 
 int SendMsg(SOCKET client_socket, char* msg, short packet_type) 
@@ -55,6 +60,8 @@ DWORD WINAPI SendThread(LPVOID socket)
 		}
 	}
 	closesocket(client_socket);
+
+	return 0;
 };
 
 int main() {
@@ -92,8 +99,10 @@ int main() {
 	ioctlsocket(client_socket, FIONBIO, &mode);
 
 	// WINAPI 스레드 생성
-	DWORD dwThreadID;
-	HANDLE hClient = CreateThread(0, 0, SendThread, (LPVOID)client_socket, 0, &dwThreadID);
+	DWORD thread_id;
+	// CREATE_SUSPENDED옵션 사용하여 사용자가 이름을 입력 한 후 Resumethread 하여 
+	// 이름을 입력할 때까지는 사용자의 입력이 서버로 메시지로 보내지지 않도록 하기
+	HANDLE thread_handle = CreateThread(0, 0, SendThread, (LPVOID)client_socket, CREATE_SUSPENDED, &thread_id);
 
 	int cur_packet_header_bytes = 0;
 	char packet_header[PACKET_HEADER_SIZE];
@@ -102,8 +111,6 @@ int main() {
 		// 패킷 헤더 읽기
 		char msg_to_recv[256] = { 0, };
 		int recved_bytes = recv(client_socket, msg_to_recv, PACKET_HEADER_SIZE - cur_packet_header_bytes, 0);
-		cur_packet_header_bytes += recved_bytes;
-		memcpy(packet_header + cur_packet_header_bytes, msg_to_recv, sizeof(char) * recved_bytes);
 		if (recved_bytes == 0) {
 			std::cout << "서버 정상 종료\n";
 			break;
@@ -119,7 +126,10 @@ int main() {
 				WSACleanup();
 				return error_num;
 			}
+			continue;
 		}
+		memcpy(packet_header + cur_packet_header_bytes, msg_to_recv, sizeof(char) * recved_bytes);
+		cur_packet_header_bytes += recved_bytes;
 		
 		// 패킷 헤더를 모두 읽었을 경우 => 실제 데이터 읽어오기
 		if (cur_packet_header_bytes == PACKET_HEADER_SIZE)
@@ -169,7 +179,7 @@ int main() {
 				fgets(szName, 256, stdin);
 				szName[strlen(szName) - 1] = 0;
 				SendMsg(client_socket, szName, PACKET_NAME_REQ);
-				ResumeThread(hClient);
+				ResumeThread(thread_handle);
 			} break;
 			case PACKET_JOIN_USER:
 			{
@@ -185,6 +195,7 @@ int main() {
 		}
 	}
 
+	CloseHandle(thread_handle);
 	closesocket(client_socket);
 	WSACleanup();
 }
