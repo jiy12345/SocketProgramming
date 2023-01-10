@@ -18,7 +18,7 @@
     <ClCompile Include="server.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Protocol.cpp">
+    <ClCompile Include="Protocol.h">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

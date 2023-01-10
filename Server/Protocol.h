@@ -11,7 +11,7 @@ typedef struct
 {
 	PACKET_HEADER ph;
 	char   msg[2048];
-}PACKET_DATA;
+}PACKET;
 
 typedef struct {
 	char    szName[9];
